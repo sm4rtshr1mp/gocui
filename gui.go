@@ -29,6 +29,14 @@ const (
 	Output256 = OutputMode(termbox.Output256)
 )
 
+type KeyEvent struct {
+	MouseX   int
+	MouseY   int
+	Key      Key
+	Char     rune
+	Modifier Modifier
+}
+
 // Gui represents the whole User Interface, including the views, layouts
 // and keybindings.
 type Gui struct {
@@ -246,7 +254,7 @@ func (g *Gui) CurrentView() *View {
 // SetKeybinding creates a new keybinding. If viewname equals to ""
 // (empty string) then the keybinding will apply to all views. key must
 // be a rune or a Key.
-func (g *Gui) SetKeybinding(viewname string, key interface{}, mod Modifier, handler func(*Gui, *View) error) error {
+func (g *Gui) SetKeybinding(viewname string, key interface{}, mod Modifier, handler func(*Gui, *View, *KeyEvent) error) error {
 	var kb *keybinding
 
 	k, ch, err := getKey(key)
@@ -626,7 +634,14 @@ func (g *Gui) execKeybindings(v *View, ev *termbox.Event) (matched bool, err err
 			continue
 		}
 		if kb.matchKeypress(Key(ev.Key), ev.Ch, Modifier(ev.Mod)) && kb.matchView(v) {
-			if err := kb.handler(g, v); err != nil {
+			keyEv := &KeyEvent{
+				MouseX:   ev.MouseX,
+				MouseY:   ev.MouseY,
+				Key:      Key(ev.Key),
+				Char:     ev.Ch,
+				Modifier: Modifier(ev.Mod),
+			}
+			if err := kb.handler(g, v, keyEv); err != nil {
 				return false, err
 			}
 			matched = true

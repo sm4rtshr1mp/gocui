@@ -12,11 +12,11 @@ type keybinding struct {
 	key      Key
 	ch       rune
 	mod      Modifier
-	handler  func(*Gui, *View) error
+	handler  func(*Gui, *View, *KeyEvent) error
 }
 
 // newKeybinding returns a new Keybinding object.
-func newKeybinding(viewname string, key Key, ch rune, mod Modifier, handler func(*Gui, *View) error) (kb *keybinding) {
+func newKeybinding(viewname string, key Key, ch rune, mod Modifier, handler func(*Gui, *View, *KeyEvent) error) (kb *keybinding) {
 	kb = &keybinding{
 		viewName: viewname,
 		key:      key,
