@@ -10,7 +10,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 const delta = 0.2
@@ -88,10 +88,10 @@ type ButtonWidget struct {
 	x, y    int
 	w       int
 	label   string
-	handler func(g *gocui.Gui, v *gocui.View) error
+	handler func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error
 }
 
-func NewButtonWidget(name string, x, y int, label string, handler func(g *gocui.Gui, v *gocui.View) error) *ButtonWidget {
+func NewButtonWidget(name string, x, y int, label string, handler func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error) *ButtonWidget {
 	return &ButtonWidget{name: name, x: x, y: y, w: len(label) + 1, label: label, handler: handler}
 }
 
@@ -140,11 +140,11 @@ func main() {
 	}
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	return gocui.ErrQuit
 }
 
-func toggleButton(g *gocui.Gui, v *gocui.View) error {
+func toggleButton(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	nextview := "butdown"
 	if v != nil && v.Name() == "butdown" {
 		nextview = "butup"
@@ -153,14 +153,14 @@ func toggleButton(g *gocui.Gui, v *gocui.View) error {
 	return err
 }
 
-func statusUp(status *StatusbarWidget) func(g *gocui.Gui, v *gocui.View) error {
-	return func(g *gocui.Gui, v *gocui.View) error {
+func statusUp(status *StatusbarWidget) func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
+	return func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 		return statusSet(status, delta)
 	}
 }
 
-func statusDown(status *StatusbarWidget) func(g *gocui.Gui, v *gocui.View) error {
-	return func(g *gocui.Gui, v *gocui.View) error {
+func statusDown(status *StatusbarWidget) func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
+	return func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 		return statusSet(status, -delta)
 	}
 }

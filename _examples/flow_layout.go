@@ -9,7 +9,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 type Label struct {
@@ -82,6 +82,6 @@ func main() {
 	}
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	return gocui.ErrQuit
 }

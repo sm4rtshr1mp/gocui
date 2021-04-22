@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 func main() {
@@ -72,11 +72,11 @@ func keybindings(g *gocui.Gui) error {
 	return nil
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	return gocui.ErrQuit
 }
 
-func showMsg(g *gocui.Gui, v *gocui.View) error {
+func showMsg(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	var l string
 	var err error
 
@@ -99,7 +99,7 @@ func showMsg(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func delMsg(g *gocui.Gui, v *gocui.View) error {
+func delMsg(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	if err := g.DeleteView("msg"); err != nil {
 		return err
 	}

@@ -11,10 +11,10 @@ import (
 	"log"
 	"strings"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
-func nextView(g *gocui.Gui, v *gocui.View) error {
+func nextView(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	if v == nil || v.Name() == "side" {
 		_, err := g.SetCurrentView("main")
 		return err
@@ -23,7 +23,7 @@ func nextView(g *gocui.Gui, v *gocui.View) error {
 	return err
 }
 
-func cursorDown(g *gocui.Gui, v *gocui.View) error {
+func cursorDown(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	if v != nil {
 		cx, cy := v.Cursor()
 		if err := v.SetCursor(cx, cy+1); err != nil {
@@ -36,7 +36,7 @@ func cursorDown(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func cursorUp(g *gocui.Gui, v *gocui.View) error {
+func cursorUp(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	if v != nil {
 		ox, oy := v.Origin()
 		cx, cy := v.Cursor()
@@ -49,7 +49,7 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func getLine(g *gocui.Gui, v *gocui.View) error {
+func getLine(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	var l string
 	var err error
 
@@ -71,7 +71,7 @@ func getLine(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func delMsg(g *gocui.Gui, v *gocui.View) error {
+func delMsg(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	if err := g.DeleteView("msg"); err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func delMsg(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	return gocui.ErrQuit
 }
 
@@ -117,7 +117,7 @@ func keybindings(g *gocui.Gui) error {
 	return nil
 }
 
-func saveMain(g *gocui.Gui, v *gocui.View) error {
+func saveMain(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	f, err := ioutil.TempFile("", "gocui_demo_")
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func saveMain(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func saveVisualMain(g *gocui.Gui, v *gocui.View) error {
+func saveVisualMain(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	f, err := ioutil.TempFile("", "gocui_demo_")
 	if err != nil {
 		return err

@@ -10,18 +10,18 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 var vbuf, buf string
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	vbuf = v.ViewBuffer()
 	buf = v.Buffer()
 	return gocui.ErrQuit
 }
 
-func overwrite(g *gocui.Gui, v *gocui.View) error {
+func overwrite(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	v.Overwrite = !v.Overwrite
 	return nil
 }

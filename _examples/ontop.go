@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 func main() {
@@ -53,14 +53,14 @@ func layout(g *gocui.Gui) error {
 }
 
 func keybindings(g *gocui.Gui) error {
-	err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+	err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 		return gocui.ErrQuit
 	})
 	if err != nil {
 		return err
 	}
 
-	err = g.SetKeybinding("", '1', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+	err = g.SetKeybinding("", '1', gocui.ModNone, func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 		_, err := g.SetViewOnTop("v1")
 		return err
 	})
@@ -68,7 +68,7 @@ func keybindings(g *gocui.Gui) error {
 		return err
 	}
 
-	err = g.SetKeybinding("", '2', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+	err = g.SetKeybinding("", '2', gocui.ModNone, func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 		_, err := g.SetViewOnTop("v2")
 		return err
 	})
@@ -76,7 +76,7 @@ func keybindings(g *gocui.Gui) error {
 		return err
 	}
 
-	err = g.SetKeybinding("", '3', gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+	err = g.SetKeybinding("", '3', gocui.ModNone, func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 		_, err := g.SetViewOnTop("v3")
 		return err
 	})

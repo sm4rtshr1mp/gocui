@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 func main() {
@@ -59,13 +59,13 @@ func layout(g *gocui.Gui) error {
 
 func initKeybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone,
-		func(g *gocui.Gui, v *gocui.View) error {
+		func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 			return gocui.ErrQuit
 		}); err != nil {
 		return err
 	}
 	if err := g.SetKeybinding("input", gocui.KeyCtrlA, gocui.ModNone,
-		func(g *gocui.Gui, v *gocui.View) error {
+		func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 			v.Mask ^= '*'
 			return nil
 		}); err != nil {

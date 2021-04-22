@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 var (
@@ -23,7 +23,7 @@ func setCurrentViewOnTop(g *gocui.Gui, name string) (*gocui.View, error) {
 	return g.SetViewOnTop(name)
 }
 
-func nextView(g *gocui.Gui, v *gocui.View) error {
+func nextView(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	nextIndex := (active + 1) % len(viewArr)
 	name := viewArr[nextIndex]
 
@@ -89,7 +89,7 @@ func layout(g *gocui.Gui) error {
 	return nil
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	return gocui.ErrQuit
 }
 

@@ -11,7 +11,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/jroimartin/gocui"
+	"github.com/sm4rtshr1mp/gocui"
 )
 
 func main() {
@@ -72,14 +72,14 @@ func initKeybindings(g *gocui.Gui) error {
 		return err
 	}
 	if err := g.SetKeybinding("stdin", gocui.KeyArrowUp, gocui.ModNone,
-		func(g *gocui.Gui, v *gocui.View) error {
+		func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 			scrollView(v, -1)
 			return nil
 		}); err != nil {
 		return err
 	}
 	if err := g.SetKeybinding("stdin", gocui.KeyArrowDown, gocui.ModNone,
-		func(g *gocui.Gui, v *gocui.View) error {
+		func(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 			scrollView(v, 1)
 			return nil
 		}); err != nil {
@@ -88,11 +88,11 @@ func initKeybindings(g *gocui.Gui) error {
 	return nil
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	return gocui.ErrQuit
 }
 
-func autoscroll(g *gocui.Gui, v *gocui.View) error {
+func autoscroll(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 	v.Autoscroll = true
 	return nil
 }
