@@ -43,7 +43,7 @@ func TestTestingScreenReturnsCorrectContent(t *testing.T) {
 	})
 
 	// Create a key binding which sets "didCallCTRLC" when triggered
-	exampleBindingToTest := func(g *Gui, v *View) error {
+	exampleBindingToTest := func(g *Gui, v *View, keyEv *KeyEvent) error {
 		didCallCTRLC = true
 		return nil
 	}
