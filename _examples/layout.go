@@ -5,25 +5,28 @@
 package main
 
 import (
+	"errors"
 	"log"
 
-	"github.com/sm4rtshr1mp/gocui"
+	"github.com/awesome-gocui/gocui"
 )
 
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
-	if _, err := g.SetView("side", -1, -1, int(0.2*float32(maxX)), maxY-5); err != nil &&
-		err != gocui.ErrUnknownView {
+	if _, err := g.SetView("side", -1, -1, int(0.2*float32(maxX)), maxY-5, 0); err != nil && !errors.Is(err, gocui.ErrUnknownView) {
 		return err
 	}
-	if _, err := g.SetView("main", int(0.2*float32(maxX)), -1, maxX, maxY-5); err != nil &&
-		err != gocui.ErrUnknownView {
+	if _, err := g.SetView("main", int(0.2*float32(maxX)), -1, maxX, maxY-5, 0); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
+			return err
+		}
+
+		g.SetCurrentView("main")
+	}
+	if _, err := g.SetView("cmdline", -1, maxY-5, maxX, maxY, 0); err != nil && !errors.Is(err, gocui.ErrUnknownView) {
 		return err
 	}
-	if _, err := g.SetView("cmdline", -1, maxY-5, maxX, maxY); err != nil &&
-		err != gocui.ErrUnknownView {
-		return err
-	}
+
 	return nil
 }
 
@@ -32,7 +35,7 @@ func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 }
 
 func main() {
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	g, err := gocui.NewGui(gocui.OutputNormal, true)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -44,7 +47,7 @@ func main() {
 		log.Panicln(err)
 	}
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+	if err := g.MainLoop(); err != nil && !errors.Is(err, gocui.ErrQuit) {
 		log.Panicln(err)
 	}
 }

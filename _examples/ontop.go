@@ -5,14 +5,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
-	"github.com/sm4rtshr1mp/gocui"
+	"github.com/awesome-gocui/gocui"
 )
 
 func main() {
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	g, err := gocui.NewGui(gocui.OutputNormal, true)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -24,29 +25,32 @@ func main() {
 		log.Panicln(err)
 	}
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+	if err := g.MainLoop(); err != nil && !errors.Is(err, gocui.ErrQuit) {
 		log.Panicln(err)
 	}
 }
 
 func layout(g *gocui.Gui) error {
-	if v, err := g.SetView("v1", 10, 2, 30, 6); err != nil {
-		if err != gocui.ErrUnknownView {
+	if v, err := g.SetView("v1", 10, 2, 30, 6, 0); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
 		fmt.Fprintln(v, "View #1")
 	}
-	if v, err := g.SetView("v2", 20, 4, 40, 8); err != nil {
-		if err != gocui.ErrUnknownView {
+	if v, err := g.SetView("v2", 20, 4, 40, 8, 0); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
 		fmt.Fprintln(v, "View #2")
 	}
-	if v, err := g.SetView("v3", 30, 6, 50, 10); err != nil {
-		if err != gocui.ErrUnknownView {
+	if v, err := g.SetView("v3", 30, 6, 50, 10, 0); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
 		fmt.Fprintln(v, "View #3")
+		if _, err := g.SetCurrentView("v3"); err != nil {
+			return err
+		}
 	}
 
 	return nil

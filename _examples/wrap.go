@@ -5,17 +5,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/sm4rtshr1mp/gocui"
+	"github.com/awesome-gocui/gocui"
 )
 
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("main", 1, 1, maxX-1, maxY-1); err != nil {
-		if err != gocui.ErrUnknownView {
+	if v, err := g.SetView("main", 1, 1, maxX-1, maxY-1, 0); err != nil {
+		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
 		v.Wrap = true
@@ -23,6 +24,10 @@ func layout(g *gocui.Gui) error {
 		line := strings.Repeat("This is a long line -- ", 10)
 		fmt.Fprintf(v, "%s\n\n", line)
 		fmt.Fprintln(v, "Short")
+
+		if _, err := g.SetCurrentView("main"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -32,7 +37,7 @@ func quit(g *gocui.Gui, v *gocui.View, keyEv *gocui.KeyEvent) error {
 }
 
 func main() {
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	g, err := gocui.NewGui(gocui.OutputNormal, true)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -44,7 +49,7 @@ func main() {
 		log.Panicln(err)
 	}
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+	if err := g.MainLoop(); err != nil && !errors.Is(err, gocui.ErrQuit) {
 		log.Panicln(err)
 	}
 }

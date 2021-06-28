@@ -4,7 +4,11 @@
 
 package gocui
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/mattn/go-runewidth"
+)
 
 const maxInt = int(^uint(0) >> 1)
 
@@ -28,206 +32,198 @@ var DefaultEditor Editor = EditorFunc(simpleEditor)
 
 // simpleEditor is used as the default gocui editor.
 func simpleEditor(v *View, key Key, ch rune, mod Modifier) {
-	switch {
-	case ch != 0 && mod == 0:
+	if ch != 0 && mod == 0 {
 		v.EditWrite(ch)
-	case key == KeySpace:
+		return
+	}
+
+	switch key {
+	case KeySpace:
 		v.EditWrite(' ')
-	case key == KeyBackspace || key == KeyBackspace2:
+	case KeyBackspace, KeyBackspace2:
 		v.EditDelete(true)
-	case key == KeyDelete:
+	case KeyDelete:
 		v.EditDelete(false)
-	case key == KeyInsert:
+	case KeyInsert:
 		v.Overwrite = !v.Overwrite
-	case key == KeyEnter:
+	case KeyEnter:
 		v.EditNewLine()
-	case key == KeyArrowDown:
-		v.MoveCursor(0, 1, false)
-	case key == KeyArrowUp:
-		v.MoveCursor(0, -1, false)
-	case key == KeyArrowLeft:
-		v.MoveCursor(-1, 0, false)
-	case key == KeyArrowRight:
-		v.MoveCursor(1, 0, false)
+	case KeyArrowDown:
+		v.moveCursor(0, 1)
+	case KeyArrowUp:
+		v.moveCursor(0, -1)
+	case KeyArrowLeft:
+		v.moveCursor(-1, 0)
+	case KeyArrowRight:
+		v.moveCursor(1, 0)
+	case KeyTab:
+		v.EditWrite('\t')
+	case KeyEsc:
+		// If not here the esc key will act like the KeySpace
+	default:
+		v.EditWrite(ch)
 	}
 }
 
 // EditWrite writes a rune at the cursor position.
 func (v *View) EditWrite(ch rune) {
 	v.writeRune(v.cx, v.cy, ch)
-	v.MoveCursor(1, 0, true)
+	v.moveCursor(1, 0)
+}
+
+// EditDeleteToStartOfLine is the equivalent of pressing ctrl+U in your terminal, it deletes to the start of the line. Or if you are already at the start of the line, it deletes the newline character
+func (v *View) EditDeleteToStartOfLine() {
+	x, _ := v.Cursor()
+	if x == 0 {
+		v.EditDelete(true)
+	} else {
+		// delete characters until we are the start of the line
+		for x > 0 {
+			v.EditDelete(true)
+			x, _ = v.Cursor()
+		}
+	}
+}
+
+// EditGotoToStartOfLine takes you to the start of the current line
+func (v *View) EditGotoToStartOfLine() {
+	x, _ := v.Cursor()
+	for x > 0 {
+		v.moveCursor(-1, 0)
+		x, _ = v.Cursor()
+	}
+}
+
+// EditGotoToEndOfLine takes you to the end of the line
+func (v *View) EditGotoToEndOfLine() {
+	_, y := v.Cursor()
+	_ = v.SetCursor(0, y+1)
+	x, newY := v.Cursor()
+	if newY == y {
+		// we must be on the last line, so lets move to the very end
+		prevX := -1
+		for prevX != x {
+			prevX = x
+			v.moveCursor(1, 0)
+			x, _ = v.Cursor()
+		}
+	} else {
+		// most left so now we're at the end of the original line
+		v.moveCursor(-1, 0)
+	}
 }
 
 // EditDelete deletes a rune at the cursor position. back determines the
 // direction.
 func (v *View) EditDelete(back bool) {
-	x, y := v.ox+v.cx, v.oy+v.cy
+	x, y := v.cx, v.cy
 	if y < 0 {
 		return
-	} else if y >= len(v.viewLines) {
-		v.MoveCursor(-1, 0, true)
+	}
+	if y >= len(v.lines) {
+		v.moveCursor(-1, 0)
 		return
 	}
 
-	maxX, _ := v.Size()
-	if back {
-		if x == 0 { // start of the line
-			if y < 1 {
-				return
-			}
-
-			var maxPrevWidth int
-			if v.Wrap {
-				maxPrevWidth = maxX
-			} else {
-				maxPrevWidth = maxInt
-			}
-
-			if v.viewLines[y].linesX == 0 { // regular line
-				v.mergeLines(v.cy - 1)
-				if len(v.viewLines[y-1].line) < maxPrevWidth {
-					v.MoveCursor(-1, 0, true)
-				}
-			} else { // wrapped line
-				v.deleteRune(len(v.viewLines[y-1].line)-1, v.cy-1)
-				v.MoveCursor(-1, 0, true)
-			}
-		} else { // middle/end of the line
-			v.deleteRune(v.cx-1, v.cy)
-			v.MoveCursor(-1, 0, true)
+	if back && x <= 0 { // start of the line
+		if y <= 0 {
+			// No reasone to merge lines
+			return
 		}
-	} else {
-		if x == len(v.viewLines[y].line) { // end of the line
-			v.mergeLines(v.cy)
-		} else { // start/middle of the line
-			v.deleteRune(v.cx, v.cy)
-		}
+
+		previousLine := v.cy - 1
+		v.cx, v.cy = len(v.lines[previousLine]), previousLine
+		_ = v.mergeLines(previousLine)
+		return
 	}
+	if back { // middle/end of the line
+		n, _ := v.deleteRune(v.cx-1, v.cy)
+		v.moveCursor(-n, 0)
+		return
+	}
+	if x == len(v.lines[y]) { // end of the line
+		_ = v.mergeLines(y)
+		return
+	}
+	_, _ = v.deleteRune(v.cx, v.cy) // start/middle of the line
 }
 
 // EditNewLine inserts a new line under the cursor.
 func (v *View) EditNewLine() {
 	v.breakLine(v.cx, v.cy)
 	v.ox = 0
+	v.cy = v.cy + 1
 	v.cx = 0
-	v.MoveCursor(0, 1, true)
 }
 
-// MoveCursor moves the cursor taking into account the width of the line/view,
-// displacing the origin if necessary.
-func (v *View) MoveCursor(dx, dy int, writeMode bool) {
+// MoveCursor mores the cursor relative from it's current possition
+func (v *View) MoveCursor(dx, dy int) {
+	v.moveCursor(dx, dy)
+	v.gui.userEvents <- userEvent{func(g *Gui) error { return nil }}
+}
+
+func (v *View) moveCursor(dx, dy int) {
+	newX, newY := v.cx+dx, v.cy+dy
+
+	if len(v.lines) == 0 {
+		v.cx, v.cy = 0, 0
+		return
+	}
+
+	// If newY is more than all lines set it to the last line
+	if newY >= len(v.lines) {
+		newY = len(v.lines) - 1
+	}
+	if newY < 0 {
+		newY = 0
+	}
+
+	line := v.lines[newY]
+
+	// If newX is more than the line width go to the next line if possible
+	// Otherwhise do nothing
+	if newX > len(line) {
+		if dy == 0 && newY+1 < len(v.lines) {
+			newY++
+			// line = v.lines[newY] // Uncomment if adding code that uses line
+			newX = 0
+		} else {
+			newX = len(line)
+		}
+	}
+
+	// If nexX is more less than 0 try goint to the previous line's last char
+	if newX < 0 {
+		if newY > 0 {
+			newY--
+			line = v.lines[newY]
+			newX = len(line)
+		} else {
+			newX = 0
+		}
+	}
+
 	maxX, maxY := v.Size()
-	cx, cy := v.cx+dx, v.cy+dy
-	x, y := v.ox+cx, v.oy+cy
+	newXOnScreen, newYOnScreen, _ := v.linesPosOnScreen(newX, newY)
 
-	var curLineWidth, prevLineWidth int
-	// get the width of the current line
-	if writeMode {
-		if v.Wrap {
-			curLineWidth = maxX - 1
-		} else {
-			curLineWidth = maxInt
-		}
-	} else {
-		if y >= 0 && y < len(v.viewLines) {
-			curLineWidth = len(v.viewLines[y].line)
-			if v.Wrap && curLineWidth >= maxX {
-				curLineWidth = maxX - 1
-			}
-		} else {
-			curLineWidth = 0
-		}
+	// Set the view offset
+	if newYOnScreen > v.oy+maxY-1 {
+		v.oy = newYOnScreen - maxY + 1
 	}
-	// get the width of the previous line
-	if y-1 >= 0 && y-1 < len(v.viewLines) {
-		prevLineWidth = len(v.viewLines[y-1].line)
-	} else {
-		prevLineWidth = 0
+	if newYOnScreen < v.oy {
+		v.oy = newYOnScreen
 	}
 
-	// adjust cursor's x position and view's x origin
-	if x > curLineWidth { // move to next line
-		if dx > 0 { // horizontal movement
-			cy++
-			if writeMode || v.oy+cy < len(v.viewLines) {
-				if !v.Wrap {
-					v.ox = 0
-				}
-				v.cx = 0
-			}
-		} else { // vertical movement
-			if curLineWidth > 0 { // move cursor to the EOL
-				if v.Wrap {
-					v.cx = curLineWidth
-				} else {
-					ncx := curLineWidth - v.ox
-					if ncx < 0 {
-						v.ox += ncx
-						if v.ox < 0 {
-							v.ox = 0
-						}
-						v.cx = 0
-					} else {
-						v.cx = ncx
-					}
-				}
-			} else {
-				if writeMode || v.oy+cy < len(v.viewLines) {
-					if !v.Wrap {
-						v.ox = 0
-					}
-					v.cx = 0
-				}
-			}
+	if !v.Wrap {
+		if newXOnScreen > v.ox+maxX-1 {
+			v.ox = newXOnScreen - maxX + 1
 		}
-	} else if cx < 0 {
-		if !v.Wrap && v.ox > 0 { // move origin to the left
-			v.ox += cx
-			v.cx = 0
-		} else { // move to previous line
-			cy--
-			if prevLineWidth > 0 {
-				if !v.Wrap { // set origin so the EOL is visible
-					nox := prevLineWidth - maxX + 1
-					if nox < 0 {
-						v.ox = 0
-					} else {
-						v.ox = nox
-					}
-				}
-				v.cx = prevLineWidth
-			} else {
-				if !v.Wrap {
-					v.ox = 0
-				}
-				v.cx = 0
-			}
-		}
-	} else { // stay on the same line
-		if v.Wrap {
-			v.cx = cx
-		} else {
-			if cx >= maxX {
-				v.ox += cx - maxX + 1
-				v.cx = maxX
-			} else {
-				v.cx = cx
-			}
+		if newXOnScreen < v.ox {
+			v.ox = newXOnScreen
 		}
 	}
 
-	// adjust cursor's y position and view's y origin
-	if cy < 0 {
-		if v.oy > 0 {
-			v.oy--
-		}
-	} else if writeMode || v.oy+cy < len(v.viewLines) {
-		if cy >= maxY {
-			v.oy++
-		} else {
-			v.cy = cy
-		}
-	}
+	v.cx, v.cy = newX, newY
 }
 
 // writeRune writes a rune into the view's internal buffer, at the
@@ -237,33 +233,30 @@ func (v *View) MoveCursor(dx, dy int, writeMode bool) {
 func (v *View) writeRune(x, y int, ch rune) error {
 	v.tainted = true
 
-	x, y, err := v.realPosition(x, y)
-	if err != nil {
-		return err
-	}
-
 	if x < 0 || y < 0 {
 		return errors.New("invalid point")
 	}
 
 	if y >= len(v.lines) {
-		s := make([][]cell, y-len(v.lines)+1)
-		v.lines = append(v.lines, s...)
+		newLines := make([][]cell, y-len(v.lines)+1)
+		v.lines = append(v.lines, newLines...)
 	}
 
-	olen := len(v.lines[y])
+	line := v.lines[y]
+	lineLen := len(line)
 
-	var s []cell
-	if x >= len(v.lines[y]) {
-		s = make([]cell, x-len(v.lines[y])+1)
+	var toInsert []cell
+	if x >= lineLen {
+		toInsert = make([]cell, x-lineLen+1)
 	} else if !v.Overwrite {
-		s = make([]cell, 1)
+		toInsert = make([]cell, 1)
 	}
-	v.lines[y] = append(v.lines[y], s...)
+	v.lines[y] = append(v.lines[y], toInsert...)
 
-	if !v.Overwrite || (v.Overwrite && x >= olen-1) {
+	if !v.Overwrite || (v.Overwrite && x+1 >= lineLen) {
 		copy(v.lines[y][x+1:], v.lines[y][x:])
 	}
+
 	v.lines[y][x] = cell{
 		fgColor: v.FgColor,
 		bgColor: v.BgColor,
@@ -275,35 +268,37 @@ func (v *View) writeRune(x, y int, ch rune) error {
 
 // deleteRune removes a rune from the view's internal buffer, at the
 // position corresponding to the point (x, y).
-func (v *View) deleteRune(x, y int) error {
+// returns the amount of columns that where removed.
+func (v *View) deleteRune(x, y int) (int, error) {
 	v.tainted = true
 
-	x, y, err := v.realPosition(x, y)
-	if err != nil {
-		return err
+	if x < 0 || y < 0 || y >= len(v.lines) || x >= len(v.lines[y]) {
+		return 0, errors.New("invalid point")
 	}
 
-	if x < 0 || y < 0 || y >= len(v.lines) || x >= len(v.lines[y]) {
-		return errors.New("invalid point")
+	var tw int
+	for i := range v.lines[y] {
+		w := runewidth.RuneWidth(v.lines[y][i].chr)
+		tw += w
+		if tw > x {
+			v.lines[y] = append(v.lines[y][:i], v.lines[y][i+1:]...)
+			return w, nil
+		}
+
 	}
-	v.lines[y] = append(v.lines[y][:x], v.lines[y][x+1:]...)
-	return nil
+
+	return 0, nil
 }
 
 // mergeLines merges the lines "y" and "y+1" if possible.
 func (v *View) mergeLines(y int) error {
 	v.tainted = true
 
-	_, y, err := v.realPosition(0, y)
-	if err != nil {
-		return err
-	}
-
 	if y < 0 || y >= len(v.lines) {
 		return errors.New("invalid point")
 	}
 
-	if y < len(v.lines)-1 { // otherwise we don't need to merge anything
+	if y+1 < len(v.lines) { // If we are already on the last line this would panic
 		v.lines[y] = append(v.lines[y], v.lines[y+1]...)
 		v.lines = append(v.lines[:y+1], v.lines[y+2:]...)
 	}
@@ -314,11 +309,6 @@ func (v *View) mergeLines(y int) error {
 // to the point (x, y).
 func (v *View) breakLine(x, y int) error {
 	v.tainted = true
-
-	x, y, err := v.realPosition(x, y)
-	if err != nil {
-		return err
-	}
 
 	if y < 0 || y >= len(v.lines) {
 		return errors.New("invalid point")

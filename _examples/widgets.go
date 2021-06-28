@@ -10,7 +10,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/sm4rtshr1mp/gocui"
+	"github.com/awesome-gocui/gocui"
 )
 
 const delta = 0.2
@@ -38,9 +38,9 @@ func NewHelpWidget(name string, x, y int, body string) *HelpWidget {
 }
 
 func (w *HelpWidget) Layout(g *gocui.Gui) error {
-	v, err := g.SetView(w.name, w.x, w.y, w.x+w.w, w.y+w.h)
+	v, err := g.SetView(w.name, w.x, w.y, w.x+w.w, w.y+w.h, 0)
 	if err != nil {
-		if err != gocui.ErrUnknownView {
+		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
 		fmt.Fprint(v, w.body)
@@ -72,8 +72,8 @@ func (w *StatusbarWidget) Val() float64 {
 }
 
 func (w *StatusbarWidget) Layout(g *gocui.Gui) error {
-	v, err := g.SetView(w.name, w.x, w.y, w.x+w.w, w.y+2)
-	if err != nil && err != gocui.ErrUnknownView {
+	v, err := g.SetView(w.name, w.x, w.y, w.x+w.w, w.y+2, 0)
+	if err != nil && !errors.Is(err, gocui.ErrUnknownView) {
 		return err
 	}
 	v.Clear()
@@ -96,9 +96,9 @@ func NewButtonWidget(name string, x, y int, label string, handler func(g *gocui.
 }
 
 func (w *ButtonWidget) Layout(g *gocui.Gui) error {
-	v, err := g.SetView(w.name, w.x, w.y, w.x+w.w, w.y+2)
+	v, err := g.SetView(w.name, w.x, w.y, w.x+w.w, w.y+2, 0)
 	if err != nil {
-		if err != gocui.ErrUnknownView {
+		if !errors.Is(err, gocui.ErrUnknownView) {
 			return err
 		}
 		if _, err := g.SetCurrentView(w.name); err != nil {
@@ -113,14 +113,14 @@ func (w *ButtonWidget) Layout(g *gocui.Gui) error {
 }
 
 func main() {
-	g, err := gocui.NewGui(gocui.OutputNormal)
+	g, err := gocui.NewGui(gocui.OutputNormal, true)
 	if err != nil {
 		log.Panicln(err)
 	}
 	defer g.Close()
 
 	g.Highlight = true
-	g.SelFgColor = gocui.ColorRed
+	g.SelFrameColor = gocui.ColorRed
 
 	help := NewHelpWidget("help", 1, 1, helpText)
 	status := NewStatusbarWidget("status", 1, 7, 50)
@@ -135,7 +135,7 @@ func main() {
 		log.Panicln(err)
 	}
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+	if err := g.MainLoop(); err != nil && !errors.Is(err, gocui.ErrQuit) {
 		log.Panicln(err)
 	}
 }
